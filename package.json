@@ -2,5 +2,12 @@
   "name": "code",
   "packageManager": "yarn@4.5.1",
   "private": true,
-  "workspaces": ["packages/*","apps/*"]
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "server/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }
