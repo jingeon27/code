@@ -1,82 +1,92 @@
-'use client'
+"use client";
 
 import Matter from "matter-js";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
-const MatterDemo: React.FC = () => {
+export default function matter (){
   const sceneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 1. Matter.js 엔진과 월드 생성
-    const engine = Matter.Engine.create();
+    if (!sceneRef.current) return;
+
+    const { Engine, Render, Runner, Composites, Common, Mouse, MouseConstraint, Composite, Bodies } = Matter;
+
+    // 1. 엔진과 월드 생성
+    const engine = Engine.create();
     const world = engine.world;
 
-    // 2. 렌더 설정
-    const render = Matter.Render.create({
-      element: sceneRef.current!,
-      engine,
+    // 2. 렌더링 설정
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
       options: {
-        width: 800,
-        height: 600,
-        wireframes: false, // 물체를 색상과 함께 렌더링
-        background: "#f8f9fa",
+        showAngleIndicator: true,
+        wireframes: false, // 변경: 실제 렌더링 스타일
       },
     });
+    Render.run(render);
 
-    // 3. 지정된 물체들 생성
-    const ground = Matter.Bodies.rectangle(400, 580, 810, 40, {
-      isStatic: true, // 고정된 물체
-      render: { fillStyle: "green" },
+    // 3. 러너 생성 및 실행
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    // 4. 물체 스택 추가
+    const stack = Composites.stack(20, 20, 10, 5, 0, 0, (x:number, y:number) => {
+      const sides = Math.round(Common.random(1, 8));
+      let chamfer = undefined;
+
+      if (sides > 2 && Common.random() > 0.7) {
+        chamfer = { radius: 10 };
+      }
+        
+      if (Math.round(Common.random(0, 1)) === 0) {
+        if (Common.random() < 0.8) {
+          return Bodies.rectangle(x, y, Common.random(25, 50), Common.random(25, 50), { chamfer });
+        } else {
+          return Bodies.rectangle(x, y, Common.random(80, 120), Common.random(25, 30), { chamfer });
+        }
+      } else {
+        return Bodies.polygon(x, y, sides, Common.random(25, 50), { chamfer });
+      }
     });
+    Composite.add(world, stack);
 
-    const boxA = Matter.Bodies.rectangle(200, 200, 80, 80, {
-      restitution: 0.5, // 반발력
-      render: { fillStyle: "blue" },
-    });
+    // 5. 월드 경계 추가
+    Composite.add(world, [
+      Bodies.rectangle(400, 0, 800, 50, { isStatic: true }), // 상단
+      Bodies.rectangle(400, 600, 800, 50, { isStatic: true }), // 하단
+      Bodies.rectangle(800, 300, 50, 600, { isStatic: true }), // 오른쪽
+      Bodies.rectangle(0, 300, 50, 600, { isStatic: true }), // 왼쪽
+    ]);
 
-    const boxB = Matter.Bodies.rectangle(400, 50, 60, 100, {
-      restitution: 0.8,
-      render: { fillStyle: "red" },
-    });
-
-    const circle = Matter.Bodies.circle(600, 100, 50, {
-      restitution: 0.9,
-      render: { fillStyle: "orange" },
-    });
-
-    const polygon = Matter.Bodies.polygon(300, 0, 5, 40, {
-      restitution: 0.7,
-      render: { fillStyle: "purple" },
-    });
-
-    // 4. 월드에 물체 추가
-    Matter.World.add(world, [ground, boxA, boxB, circle, polygon]);
-
-    // 5. 엔진 실행 및 렌더링
-    Matter.Engine.run(engine);
-    Matter.Render.run(render);
-
-    // 6. 마우스 드래그 기능 추가 (선택적)
-    const mouse = Matter.Mouse.create(render.canvas);
-    const mouseConstraint = Matter.MouseConstraint.create(engine, {
-      mouse: mouse,
+    // 6. 마우스 컨트롤 추가
+    const mouse = Mouse.create(render.canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse,
       constraint: {
         stiffness: 0.2,
         render: { visible: false },
       },
     });
-    Matter.World.add(world, mouseConstraint);
+    Composite.add(world, mouseConstraint);
 
-    // 7. 클린업
+    render.mouse = mouse;
+
+    // 7. 렌더링 영역 조정
+    Render.lookAt(render, {
+      min: { x: 0, y: 0 },
+      max: { x: 800, y: 600 },
+    });
+
+    // 8. 클린업
     return () => {
       Matter.Render.stop(render);
+      Matter.Runner.stop(runner);
       Matter.Engine.clear(engine);
       render.canvas.remove();
       render.textures = {};
     };
   }, []);
 
-  return <div ref={sceneRef} />;
+  return <div ref={sceneRef}  />;
 };
-
-export default MatterDemo;
