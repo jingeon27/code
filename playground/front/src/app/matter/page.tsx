@@ -9,7 +9,7 @@ export default function matter (){
   useEffect(() => {
     if (!sceneRef.current) return;
 
-    const { Engine, Render, Runner, Composites, Common, Mouse, MouseConstraint, Composite, Bodies } = Matter;
+    const { Engine, Render, Runner,Events, Composites, Common, Mouse, MouseConstraint, Composite, Bodies } = Matter;
 
     // 1. 엔진과 월드 생성
     const engine = Engine.create();
@@ -53,7 +53,7 @@ export default function matter (){
 
     // 5. 월드 경계 추가
     Composite.add(world, [
-      Bodies.rectangle(400, 0, 800, 50, { isStatic: true }), // 상단
+      Bodies.rectangle(400, 0, 800, 50, { isStatic: true, }), // 상단
       Bodies.rectangle(400, 600, 800, 50, { isStatic: true }), // 하단
       Bodies.rectangle(800, 300, 50, 600, { isStatic: true }), // 오른쪽
       Bodies.rectangle(0, 300, 50, 600, { isStatic: true }), // 왼쪽
@@ -69,7 +69,27 @@ export default function matter (){
       },
     });
     Composite.add(world, mouseConstraint);
+    // 물체 클릭 이벤트
+    Events.on(mouseConstraint, "mousedown", (event: any) => {
+      const { mouse } = event;
+      const bodies = Composite.allBodies(world);
 
+      bodies.forEach((body: any) => {
+        // 마우스가 물체의 경계를 포함하는지 체크
+        if (Matter.Bounds.contains(body.bounds, mouse.position)) {
+          console.log(`Clicked on body with ID: ${body.id}, Custom ID: ${body.customId}`);
+          // 클릭 시 물체 색상 변경
+          body.render.fillStyle = "red";
+
+          // 페이지 이동 (예: Custom ID에 따라 페이지 이동)
+          const targetId = body.customId;
+          if (targetId !== undefined) {
+            // 예시: id에 따라 페이지 이동
+            window.location.href = `/target-page/${targetId}`;
+          }
+        }
+      });
+    });
     render.mouse = mouse;
 
     // 7. 렌더링 영역 조정
