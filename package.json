@@ -9,6 +9,7 @@
     "playground/*"
   ],
   "devDependencies": {
+    "lodash":"",
     "typescript": "^5.6.3"
   }
 }
